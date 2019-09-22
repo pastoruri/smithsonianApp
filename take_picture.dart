@@ -7,12 +7,28 @@ import 'package:path_provider/path_provider.dart';
 
 // A screen that allows users to take a picture using a given camera.
 class TakePictureScreen extends StatefulWidget {
-  final CameraDescription camera;
 
-  const TakePictureScreen({
-    Key key,
-    @required this.camera,
-  }) : super(key: key);
+  Future<CameraDescription> getAvailableCameras() async {
+    final cameras = await availableCameras();
+    final firstCamera = cameras.first;
+    return firstCamera;
+  }
+
+  var camera;
+
+  void setCamera(CameraDescription _camera) {
+    camera = _camera;
+  }
+
+  TakePictureScreen({Key key}) : super(key: key) {
+
+    Future<CameraDescription> cameraDescription = getAvailableCameras();
+
+    cameraDescription.then( (firstCamera) {
+        setCamera(firstCamera);
+    });
+
+  }
 
   @override
   TakePictureScreenState createState() => TakePictureScreenState();

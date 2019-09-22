@@ -4,15 +4,16 @@ import 'dart:convert';
 import 'package:flutter_facebook_login/flutter_facebook_login.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_auth_buttons/flutter_auth_buttons.dart' show FacebookSignInButton, GoogleSignInButton;
-import 'camara.dart'; // activity para tomarte foto al animal
+import 'camera.dart';
 
-void main() => runApp(MainPage());
+void main() => runApp(MyApp());
 
-class MainPage extends StatelessWidget {
+class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return new MaterialApp(
-        home: new LoginPage());
+        home: new LoginPage(),
+    );
   }
 }
 
@@ -30,46 +31,46 @@ class LoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: Center(
-            child: Text(name),
+      appBar: AppBar(
+        title: Center(
+          child: Text(name),
+        ),
+      ),
+      body: Container(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: EdgeInsets.all(8.0),
+                child:
+                FacebookSignInButton(
+                  onPressed: () {
+                    Future<String> loginWithFacebook = initiateFacebookLogin();
+
+                    loginWithFacebook.then( (userName) {
+                      changeActivity(context, userName.toString());
+                    });
+
+                  },
+                ),
+              ),
+
+              Padding(
+                padding: EdgeInsets.all(8.0),
+                child:
+                GoogleSignInButton(
+                  onPressed: () {
+                    // TODO: google sign in logic
+                  },
+                ),
+              ),
+            ],
           ),
         ),
-        body: Container(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child:
-                    FacebookSignInButton(
-                      onPressed: () {
-                        Future<String> loginWithFacebook = initiateFacebookLogin();
-
-                        loginWithFacebook.then( (userName) {
-                          changeActivity(context, userName.toString());
-                        });
-
-                      },
-                    ),
-                ),
-
-                Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child:
-                    GoogleSignInButton(
-                      onPressed: () {
-                        // TODO: google sign in logic
-                      },
-                    ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
+      ),
+    );
   }
 
   Future<String> initiateFacebookLogin() async {
