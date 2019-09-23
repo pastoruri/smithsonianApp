@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
 
-class form extends StatefulWidget {
-
-  final String title = "Cuéntanos más sobre el animal";
-
+class Form extends StatefulWidget {
   @override
-  _formState createState() => _formState();
+  _FormState createState() => _FormState();
 }
 
-
-class _formState extends State<form> {
+class _FormState extends State<Form> {
   var _species = ['Desconocido', 'Pez', 'Mamífero'];
   var _actualspecie = 'Desconocido';
   bool _isDead = false;
@@ -70,7 +66,9 @@ class _formState extends State<form> {
                               child: Text(dropDownStringItem, style: TextStyle(fontSize: 18.0),)
                           );
                         }).toList(),
-                        onChanged: (String newValueSelected) {changeSpecie(newValueSelected);},
+                        onChanged: (String newValueSelected) {
+                          changeSpecie(newValueSelected);
+                        },
                         value: _actualspecie,
                       ),
                     ],
@@ -128,7 +126,9 @@ class _formState extends State<form> {
                 Padding(
                   padding: EdgeInsets.all(20.0),
                   child: RaisedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      // TODO: mandar la data al servidor o guardarla a un staging area
+                    },
                     color: Colors.lightGreen,
                     child: Text(
                         'Enviar',
