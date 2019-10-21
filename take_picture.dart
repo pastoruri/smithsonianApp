@@ -1,37 +1,37 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' show join;
 import 'package:path_provider/path_provider.dart';
 import 'form.dart';
-import 'dart:io' show Directory;
+import 'dart:io' show File;
+import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-// TODO: arbol de decisiones de especies
-// TODO: "addNewPhoto" te permite tomar la foto o elegirla de la galería
+// TODO: arbol de decisiones de especies (con especies más comunes, ver lista de whatsapp)
 // TODO: poner un nombre único a las fotos
 
-// A screen that allows users to take a picture using a given camera.
 class TakePictureScreen extends StatefulWidget {
 
+  SharedPreferences disk;
   CameraDescription camera;
   int imagesTaken = 0;
+  bool firstImageTaken = false;
 
-  void cleanDirectory() {
-    final imageDir = Directory('/data/user/0/com.example.animal_recog/app_flutter');
-    imageDir.deleteSync(recursive: true);
-  }
-
-  TakePictureScreen({Key key, this.camera}) : super(key: key) {
-//    cleanDirectory();
-//    print('All images deleted!');
-  }
+  TakePictureScreen({Key key, this.camera, this.disk}) : super(key: key);
 
   @override
-  TakePictureScreenState createState() => TakePictureScreenState();
+  TakePictureScreenState createState() => TakePictureScreenState(disk: disk);
 }
 
+
+// A screen that allows users to take a picture using a given camera.
+
 class TakePictureScreenState extends State<TakePictureScreen> {
+
+  SharedPreferences disk;
+
+  TakePictureScreenState({Key key, this.disk});
 
   navigate({BuildContext context, String path, int imagesTaken}) async {
     final newImageCount = await Navigator.push(
@@ -80,13 +80,19 @@ class TakePictureScreenState extends State<TakePictureScreen> {
     super.dispose();
   }
 
+  Future<Position> getUserLocation() async {
+    Position location = await Geolocator().getCurrentPosition(LocationAccuracy.high);
+    return location;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Take a picture')),
+      appBar: AppBar(
+          title: Text('Tome una foto')),
       // Wait until the controller is initialized before displaying the
       // camera preview. Use a FutureBuilder to display a loading spinner
-      // until the controller has finished initializing.
+      // until the controller has finished initializing
       body: FutureBuilder<void>(
         future: _initializeControllerFuture,
         builder: (context, snapshot) {
@@ -105,6 +111,19 @@ class TakePictureScreenState extends State<TakePictureScreen> {
         onPressed: () async {
             imageTaken();
 
+            // Get user location (location of first image)
+            if (!widget.firstImageTaken) {
+              getUserLocation().then(
+                      (location) {
+                    disk.setString("latitude", location.latitude.toString());
+                    disk.setString("longitude", location.longitude.toString());
+                    print("LATITUDE: ${location.latitude}");
+                    print("LONGITUDE: ${location.longitude}");
+                  }
+              );
+              widget.firstImageTaken = true;
+            }
+
             // Take the Picture in a try / catch block. If anything goes wrong,
             // catch the error.
             try {
@@ -113,8 +132,7 @@ class TakePictureScreenState extends State<TakePictureScreen> {
 
               final path = join(
                 (await getApplicationDocumentsDirectory()).path,
-                '${widget.imagesTaken}.png',
-              );
+                '${widget.imagesTaken}.png');
 
               // Attempt to take a picture and log where it's been saved.
               await _controller.takePicture(path);
@@ -159,80 +177,80 @@ class DisplayPictureScreenState extends State<DisplayPictureScreen> {
      });
    }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Image Preview')),
-      // The image is stored as a file on the device. Use the `Image.file`
-      // constructor with the given path to display the image.
-      body: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              mainAxisSize: MainAxisSize.max,
-              children: <Widget>[
-                Padding(
-                  padding: EdgeInsets.all(4.0),
-                  child: Image.file(File(widget.imagePath)),
-                ),
-                Column(
-                  children: <Widget>[
-                    Padding(
-                      padding: EdgeInsets.only(bottom: 1.0),
-                      child: Text("Images taken: ${widget.imagesTaken}"),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: <Widget>[
-                        if (!widget.fivePhotosTaken) Padding(
-                          padding: EdgeInsets.all(4.0),
-                          child: FlatButton.icon(
-                            color: Colors.lightGreen,
-                            icon: Icon(Icons.add_a_photo),
-                            label: Text('Add Photo'),
-                            onPressed: () {
-                              Navigator.pop(context, widget.imagesTaken);
-                            },
-                          ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.all(4.0),
-                          child: FlatButton.icon(
-                            color: Colors.lightGreen,
-                            icon: Icon(Icons.delete),
-                            label: const Text('Discard Photo'),
-                            onPressed: () {
-                              final imageFile = File(widget.imagePath);
-                              imageFile.deleteSync(); // delete current photo from files
-                              print('Images taken count before deletion: ${widget.imagesTaken}');
-                              imageDeleted();
-                              print('Images taken count after deletion: ${widget.imagesTaken}');
-                              print('Delete image at ${widget.imagePath}');
-                              Navigator.pop(context, widget.imagesTaken);
-                            }
-                          ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.all(4.0),
-                          child: FlatButton.icon(
-                              color: Colors.lightGreen,
-                              icon: Icon(Icons.arrow_right),
-                              label: const Text('Confirm'),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  new MaterialPageRoute(
-                                      builder: (context) => form()),
-                                );
-                              }
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            ),
-    );
-  }
+   @override
+   Widget build(BuildContext context) {
+     return Scaffold(
+       appBar: AppBar(title: Text('¿Esta imagen está bien?')),
+       // The image is stored as a file on the device. Use the `Image.file`
+       // constructor with the given path to display the image.
+       body: Column(
+         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+         mainAxisSize: MainAxisSize.max,
+         children: <Widget>[
+           Padding(
+             padding: EdgeInsets.all(4.0),
+             child: Image.file(File(widget.imagePath)),
+           ),
+           Column(
+             children: <Widget>[
+               Padding(
+                 padding: EdgeInsets.only(bottom: 1.0),
+                 child: Text("Imágenes tomadas: ${widget.imagesTaken}"),
+               ),
+               Row(
+                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                 children: <Widget>[
+                   if (!widget.fivePhotosTaken) Padding(
+                     padding: EdgeInsets.all(4.0),
+                     child: FlatButton.icon(
+                       color: Colors.lightGreen,
+                       icon: Icon(Icons.add_a_photo),
+                       label: Text('Añadir Foto'),
+                       onPressed: () {
+                         Navigator.pop(context, widget.imagesTaken);
+                       },
+                     ),
+                   ),
+                   Padding(
+                     padding: EdgeInsets.all(4.0),
+                     child: FlatButton.icon(
+                         color: Colors.lightGreen,
+                         icon: Icon(Icons.delete),
+                         label: const Text('Borrar Foto'),
+                         onPressed: () {
+                           final imageFile = File(widget.imagePath);
+                           imageFile.deleteSync(); // delete current photo from files
+                           print('Images taken count before deletion: ${widget.imagesTaken}');
+                           imageDeleted();
+                           print('Images taken count after deletion: ${widget.imagesTaken}');
+                           print('Delete image at ${widget.imagePath}');
+                           Navigator.pop(context, widget.imagesTaken);
+                         }
+                     ),
+                   ),
+                   Padding(
+                     padding: EdgeInsets.all(4.0),
+                     child: FlatButton.icon(
+                         color: Colors.lightGreen,
+                         icon: Icon(Icons.arrow_right),
+                         label: const Text('Confirmar'),
+                         onPressed: () {
+                           Navigator.push(
+                             context,
+                             new MaterialPageRoute(
+                                 builder: (context) => form()),
+                           );
+                         }
+                     ),
+                   ),
+                 ],
+               ),
+             ],
+           ),
+         ],
+       ),
+     );
+   }
 
 }
 
