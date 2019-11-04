@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:animal_recog/camera.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' show join;
@@ -7,9 +8,6 @@ import 'form.dart';
 import 'dart:io' show File;
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-// TODO: arbol de decisiones de especies (con especies más comunes, ver lista de whatsapp)
-// TODO: poner un nombre único a las fotos
 
 class TakePictureScreen extends StatefulWidget {
 
@@ -37,7 +35,7 @@ class TakePictureScreenState extends State<TakePictureScreen> {
     final newImageCount = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => DisplayPictureScreen(imagePath: path, imagesTaken: imagesTaken),
+        builder: (context) => DisplayPictureScreen(imagePath: path, imagesTaken: imagesTaken, disk: disk),
       ),
     );
 
@@ -85,6 +83,14 @@ class TakePictureScreenState extends State<TakePictureScreen> {
     return location;
   }
 
+  void getCoordinates() async {
+    var userLocation = await getUserLocation();
+    disk.setString("latitude", userLocation.latitude.toString());
+    disk.setString("longitude", userLocation.longitude.toString());
+    print("LATITUDE: ${userLocation.latitude}");
+    print("LONGITUDE: ${userLocation.longitude}");
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -110,19 +116,7 @@ class TakePictureScreenState extends State<TakePictureScreen> {
         // Provide an onPressed callback.
         onPressed: () async {
             imageTaken();
-
-            // Get user location (location of first image)
-            if (!widget.firstImageTaken) {
-              getUserLocation().then(
-                      (location) {
-                    disk.setString("latitude", location.latitude.toString());
-                    disk.setString("longitude", location.longitude.toString());
-                    print("LATITUDE: ${location.latitude}");
-                    print("LONGITUDE: ${location.longitude}");
-                  }
-              );
-              widget.firstImageTaken = true;
-            }
+            widget.firstImageTaken = true;
 
             // Take the Picture in a try / catch block. If anything goes wrong,
             // catch the error.
@@ -141,6 +135,7 @@ class TakePictureScreenState extends State<TakePictureScreen> {
               navigate(context: context, path: path, imagesTaken: widget.imagesTaken);
 
               print('Saved image at ${path}');
+              getUserLocation(); // called on a background thread, hopefully
 
             } catch (e) {
               // If an error occurs, log the error to the console.
@@ -153,7 +148,7 @@ class TakePictureScreenState extends State<TakePictureScreen> {
 }
 
 class DisplayPictureScreen extends StatefulWidget {
-  DisplayPictureScreen({Key key, this.imagePath, this.imagesTaken}) : super(key: key) {
+  DisplayPictureScreen({Key key, this.imagePath, this.imagesTaken, @required this.disk}) : super(key: key) {
     if (imagesTaken != 5) {
       fivePhotosTaken = false;
     } else {
@@ -161,6 +156,7 @@ class DisplayPictureScreen extends StatefulWidget {
     }
   }
 
+  SharedPreferences disk;
   final String imagePath;
   bool fivePhotosTaken;
   int imagesTaken;
@@ -180,72 +176,81 @@ class DisplayPictureScreenState extends State<DisplayPictureScreen> {
    @override
    Widget build(BuildContext context) {
      return Scaffold(
-       appBar: AppBar(title: Text('¿Esta imagen está bien?')),
+       appBar: AppBar(
+           title: Text('¿Esta imagen está bien?'),
+       ),
        // The image is stored as a file on the device. Use the `Image.file`
        // constructor with the given path to display the image.
        body: Column(
-         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-         mainAxisSize: MainAxisSize.max,
+//         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+         mainAxisSize: MainAxisSize.min,
          children: <Widget>[
-           Padding(
-             padding: EdgeInsets.all(4.0),
+           Expanded(
+             flex: 28,
              child: Image.file(File(widget.imagePath)),
            ),
-           Column(
-             children: <Widget>[
-               Padding(
-                 padding: EdgeInsets.only(bottom: 1.0),
-                 child: Text("Imágenes tomadas: ${widget.imagesTaken}"),
-               ),
-               Row(
-                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                 children: <Widget>[
-                   if (!widget.fivePhotosTaken) Padding(
-                     padding: EdgeInsets.all(4.0),
-                     child: FlatButton.icon(
-                       color: Colors.lightGreen,
-                       icon: Icon(Icons.add_a_photo),
-                       label: Text('Añadir Foto'),
-                       onPressed: () {
-                         Navigator.pop(context, widget.imagesTaken);
-                       },
-                     ),
-                   ),
-                   Padding(
-                     padding: EdgeInsets.all(4.0),
-                     child: FlatButton.icon(
+           Expanded(
+             flex: 4,
+             child: Column(
+               children: <Widget>[
+                 Flexible(
+                   fit: FlexFit.loose,
+                   flex: 2,
+                   child: Text("Imágenes tomadas: ${widget.imagesTaken}"),
+                 ),
+                 Row(
+                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                   children: <Widget>[
+                     if (!widget.fivePhotosTaken) Flexible(
+                       flex: 2,
+                       fit: FlexFit.loose,
+                       child: FlatButton.icon(
                          color: Colors.lightGreen,
-                         icon: Icon(Icons.delete),
-                         label: const Text('Borrar Foto'),
+                         icon: Icon(Icons.add_a_photo),
+                         label: Text('Añadir Foto'),
                          onPressed: () {
-                           final imageFile = File(widget.imagePath);
-                           imageFile.deleteSync(); // delete current photo from files
-                           print('Images taken count before deletion: ${widget.imagesTaken}');
-                           imageDeleted();
-                           print('Images taken count after deletion: ${widget.imagesTaken}');
-                           print('Delete image at ${widget.imagePath}');
                            Navigator.pop(context, widget.imagesTaken);
-                         }
+                         },
+                       ),
                      ),
-                   ),
-                   Padding(
-                     padding: EdgeInsets.all(4.0),
-                     child: FlatButton.icon(
-                         color: Colors.lightGreen,
-                         icon: Icon(Icons.arrow_right),
-                         label: const Text('Confirmar'),
-                         onPressed: () {
-                           Navigator.push(
-                             context,
-                             new MaterialPageRoute(
-                                 builder: (context) => form()),
-                           );
-                         }
+                     Flexible(
+                       flex: 2,
+                       fit: FlexFit.loose,
+                       child: FlatButton.icon(
+                           color: Colors.lightGreen,
+                           icon: Icon(Icons.delete),
+                           label: const Text('Borrar Foto'),
+                           onPressed: () {
+                             final imageFile = File(widget.imagePath);
+                             imageFile.deleteSync(); // delete current photo from files
+                             print('Images taken count before deletion: ${widget.imagesTaken}');
+                             imageDeleted();
+                             print('Images taken count after deletion: ${widget.imagesTaken}');
+                             print('Delete image at ${widget.imagePath}');
+                             Navigator.pop(context, widget.imagesTaken);
+                           }
+                       ),
                      ),
-                   ),
-                 ],
-               ),
-             ],
+                     Flexible(
+                       flex: 2,
+                       fit: FlexFit.loose,
+                       child: FlatButton.icon(
+                           color: Colors.lightGreen,
+                           icon: Icon(Icons.arrow_right),
+                           label: const Text('Confirmar'),
+                           onPressed: () {
+                             Navigator.push(
+                               context,
+                               new MaterialPageRoute(
+                                   builder: (context) => form(disk: widget.disk)),
+                             );
+                           }
+                       ),
+                     ),
+                   ],
+                 ),
+               ],
+             ),
            ),
          ],
        ),

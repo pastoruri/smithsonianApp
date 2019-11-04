@@ -1,13 +1,25 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'dart:io' show File;
+import 'camera.dart' show Camera;
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart' show SharedPreferences;
 
-// TODO: list view que muestra las especies que varan más de perú
+// TODO: get token from piero's server
+// TODO: once we get that token, send request with token as header
 
 class form extends StatefulWidget {
 
   List<File> chosenPhotosFromGallery; // list of paths to the images the user chose from his or her gallery
+  SharedPreferences disk;
+  String name;
+  String email;
+  String accessToken;
 
-  form({this.chosenPhotosFromGallery});
+  form({this.chosenPhotosFromGallery, @required this.disk}) {
+    disk.getString("name");
+    disk.getString("userNameEmail");
+    disk.getString("accessToken");
+  }
 
   @override
   _formState createState() {
@@ -55,13 +67,13 @@ class _formState extends State<form> {
 
   void change_explanation(String value) {
     setState(() {
-      this._explanation = value;
+      this._explanation = value; // causa de muerte
     });
   }
 
   void change_comments(String value) {
     setState(() {
-      this._comments = value;
+      this._comments = value; // comentarios
     });
   }
 
@@ -179,9 +191,48 @@ class _formState extends State<form> {
                 Padding(
                   padding: EdgeInsets.all(20.0),
                   child: RaisedButton(
-                    onPressed: () {
-                      // TODO: mandar la data al servidor o guardarla a un staging area
-                      // TODO: get access token to identify each user uniquely
+                    onPressed: () async {
+                      Directory imageDir = Directory('/data/user/0/com.pi2.animal_recog/app_flutter/');
+                      var files = imageDir.listSync();
+
+                      for (var file in files) {
+                        print("FILE: $file");
+                      }
+
+                      /// sending the data to the server
+                      //////////////////////////////////////////
+
+//                      // base url
+//                      String url = 'https://jsonplaceholder.typicode.com/posts';
+//
+//                      // headers
+//                      // FIXME?
+//                      Map<String, String> headers = {
+//                        'Content-type': 'application/json',
+//                        'Accept': 'application/json',
+//                        'Authorization': '${widget.accessToken}'
+//                      };
+//
+//                      // data to send
+//                      String data = '{"name": "${widget.name}", "email": "${widget.email}", "esta_muerto": "$_isDead", "cause_de_muerte": "$_explanation", "comentarios": "$_comments"}';
+//
+//                      // make post request
+//                      final response = await http.post(url, headers: headers, body: data);
+//
+//                      // check the status code for the result
+//                      int statusCode = response.statusCode;
+//
+//                      // body of the response
+//                      String body = response.body;
+
+                      //////////////////////////////////////////
+
+                      // FIXME? for debug purposes maybe comment these lines
+                      Camera.directoryErased = false;
+                      Camera.deleteAllImages(); // delete all images after sending request with images
+                      Camera.directoryErased = null;
+
+                      print("REQUEST SENT!");
                     },
                     color: Colors.lightGreen,
                     child: Text(

@@ -1,16 +1,16 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'take_picture.dart';
 import 'dart:io' show Directory, File;
 import 'form.dart';
 import 'package:multi_image_picker/multi_image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart' show SharedPreferences;
 import 'main.dart' show LoginPage;
 import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/material.dart';
+import 'package:simple_permissions/simple_permissions.dart';
 
 // TODO: agregar video-tutorial
-// TODO: guiar al usuario en cada etapa de la aplicación ("reportar animal varado" (arriba del icono de la camara))
 
 class Camera extends StatelessWidget {
 
@@ -22,23 +22,27 @@ class Camera extends StatelessWidget {
     return disk;
   }
 
-  bool directoryErased = false;
+  static bool directoryErased;
 
   Camera({Key key, this.name, this.disk}) : super(key: key) {
-    final imageDir = Directory('/data/user/0/com.example.animal_recog/app_flutter');
-    Future<bool> exists = imageDir.exists();
-    exists.then( (directoryExists) {
-        // FIXME: this methods is called several times
-//      if (directoryExists) {
-//        imageDir.deleteSync(recursive: true);
-//        print("ALL IMAGES DELETED!");
-//        directoryErased = tru;
-//      } else {
-//        print("NO IMAGES TO DELETE!");
-//      }
-    });
-
+    deleteAllImages();
   }
+
+  static void deleteAllImages() async {
+    Directory imageDir;
+    if (directoryErased != null && !directoryErased) { // if someone already initialized directoryExists and it's set to false
+      bool gotPermission = await SimplePermissions.requestPermission(Permission.WriteExternalStorage);
+      if (gotPermission) {
+        imageDir = Directory('/data/user/0/com.pi2.animal_recog/app_flutter/');
+        imageDir.deleteSync(recursive: true);
+        print("ALL IMAGES DELETED!");
+        directoryErased = true;
+      }
+    } else {
+      print("TRIED TO ILEGALLY ERASE DIRECTORY!");
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -57,10 +61,10 @@ class Camera extends StatelessWidget {
 
 class Question extends StatefulWidget {
   Question({Key key, this.title, this.camera, this.disk}) : super(key: key) {
-    isLoggedIn = disk.getBool("isLoggedIn");
+    isLoggedIn = disk.getBool("isLoggedIn") ?? false; // if isLoggedIn was not saved on disk, then user did not sign in, so set isLoggedIn to false
   }
 
-  SharedPreferences disk;
+  final SharedPreferences disk;
   bool isLoggedIn;
   final String title;
   final CameraDescription camera;
@@ -92,12 +96,10 @@ class _QuestionState extends State<Question> {
                   onTap: () {
 
                     if (isLoggedIn) {
+
                       disk.setBool("isLoggedIn", false);
                       disk.setString("userName", "No has iniciado sesión");
                       disk.setString("userNameEmail", "");
-                      disk.setString("facebookToken", "");
-                      disk.setString("googleToken", "");
-
                       isLoggedIn = false;
                       widget.isLoggedIn = false;
 
@@ -157,10 +159,23 @@ class _QuestionState extends State<Question> {
         title: Text(widget.title),
       ),
       body: Column(
-//        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: <Widget>[
-          Padding( // 64 en todos pero mas arriba
-            padding: EdgeInsets.only(left: 64.0, right: 64.0, bottom: 64.0, top: 86.0),
+          Padding(padding: EdgeInsets.all(6.0),),
+          Flexible(
+            flex: 2,
+            child: RaisedButton(
+              child: Text(
+                "Click Para Borrar Todas Las Fotos Tomadas",
+              ),
+              onPressed: () {
+                Camera.directoryErased = false;
+                Camera.deleteAllImages();
+                Camera.directoryErased = null;
+              },
+            ),
+          ),
+          Flexible( // 64 en todos pero mas arriba
+            flex: 2,
             child: Center(
               child: Text(
                 "Haga click en la cámara para tomar la foto del animal varado",
@@ -173,8 +188,8 @@ class _QuestionState extends State<Question> {
               ),
             ),
           ),
-          Padding(
-            padding: EdgeInsets.only(left: 64.0, right: 64.0, bottom: 64.0, top: 60.0),
+          Flexible(
+            flex: 6,
             child: Center(
               child: RawMaterialButton(
                 onPressed: AccessCamera,
@@ -212,14 +227,11 @@ class _QuestionState extends State<Question> {
   void _openGalery() async {
     Future<List<File>> choosePhotos;
 
-    getUserLocation().then(
-        (location) {
-          disk.setString("latitude", location.latitude.toString());
-          disk.setString("longitude", location.longitude.toString());
-          print("LATITUDE: ${location.latitude}");
-          print("LONGITUDE: ${location.longitude}");
-        }
-    );
+    final userLocation = await getUserLocation();
+    disk.setString("latitude", userLocation.latitude.toString());
+    disk.setString("longitude", userLocation.longitude.toString());
+    print("LATITUDE: ${userLocation.latitude}");
+    print("LONGITUDE: ${userLocation.longitude}");
 
     try {
       choosePhotos = MultiImagePicker.pickImages(maxImages: 5);
@@ -232,7 +244,7 @@ class _QuestionState extends State<Question> {
         Navigator.push( // change activity
             context,
             new MaterialPageRoute(
-                builder: (_context) => form(chosenPhotosFromGallery: photos))
+                builder: (_context) => form(chosenPhotosFromGallery: photos, disk: disk,))
         );
       });
     } on Exception catch (e) {
@@ -266,6 +278,7 @@ class _QuestionState extends State<Question> {
                   ),
                   GestureDetector(
                     child: Text('Elegir foto'),
+                    // FIXME: al elegir las fotos, la app crashea
                     onTap: () {
                       _openGalery();
                     },
