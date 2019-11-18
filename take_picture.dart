@@ -14,6 +14,7 @@ class TakePictureScreen extends StatefulWidget {
   SharedPreferences disk;
   CameraDescription camera;
   static int imagesTaken = 0;
+  static String imagePath;
 
   TakePictureScreen({Key key, this.camera, this.disk}) : super(key: key);
 
@@ -27,15 +28,13 @@ class TakePictureScreenState extends State<TakePictureScreen> {
 
   TakePictureScreenState({Key key, this.disk});
 
-  navigate({BuildContext context, String path, int imagesTaken}) async {
-    final newImageCount = await Navigator.push(
+  navigate({BuildContext context}) async {
+    await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => DisplayPictureScreen(imagePath: path, imagesTaken: imagesTaken, disk: disk),
+        builder: (context) => DisplayPictureScreen(disk: disk),
       ),
     );
-
-    imagesTaken = newImageCount;
   }
 
   void imageTaken() {
@@ -120,12 +119,13 @@ class TakePictureScreenState extends State<TakePictureScreen> {
               await _initializeControllerFuture;
 
               final path = join(Camera.documentsDirectoryPath, '${TakePictureScreen.imagesTaken}.png');
+              TakePictureScreen.imagePath = path;
 
               // Attempt to take a picture and log where it's been saved.
               await _controller.takePicture(path);
 
               // If the picture was taken, display it on a new screen.
-              navigate(context: context, path: path, imagesTaken: TakePictureScreen.imagesTaken);
+              navigate(context: context);
 
               disk.setInt("imagesTaken", TakePictureScreen.imagesTaken);
               print('Saved image at ${path}');
@@ -142,8 +142,8 @@ class TakePictureScreenState extends State<TakePictureScreen> {
 }
 
 class DisplayPictureScreen extends StatefulWidget {
-  DisplayPictureScreen({Key key, this.imagePath, this.imagesTaken, @required this.disk}) : super(key: key) {
-    if (imagesTaken != 5) {
+  DisplayPictureScreen({Key key, @required this.disk}) : super(key: key) {
+    if (TakePictureScreen.imagesTaken != 5) {
       fivePhotosTaken = false;
     } else {
       fivePhotosTaken = true;
@@ -151,9 +151,7 @@ class DisplayPictureScreen extends StatefulWidget {
   }
 
   SharedPreferences disk;
-  String imagePath;
   bool fivePhotosTaken;
-  int imagesTaken;
 
   @override
   DisplayPictureScreenState createState() => DisplayPictureScreenState();
@@ -163,14 +161,14 @@ class DisplayPictureScreenState extends State<DisplayPictureScreen> {
 
    void imageDeleted() {
      setState(() {
-       widget.imagesTaken -= 1;
+       TakePictureScreen.imagesTaken -= 1;
      });
    }
 
    @override
    Widget build(BuildContext context) {
-     print("ABOUT TO DISPLAY AN IMAGE AT PATH: ${widget.imagePath}");
-     print("BY THE WAY, IMAGES TAKEN: ${widget.imagesTaken}");
+     print("ABOUT TO DISPLAY AN IMAGE AT PATH: ${TakePictureScreen.imagePath}");
+     print("BY THE WAY, IMAGES TAKEN: ${TakePictureScreen.imagesTaken}");
      return Scaffold(
        appBar: AppBar(
            title: Text('¿Esta imagen está bien?'),
@@ -180,7 +178,7 @@ class DisplayPictureScreenState extends State<DisplayPictureScreen> {
          children: <Widget>[
            Expanded(
              flex: 28,
-             child: Image.file(File(widget.imagePath)),
+             child: Image.file(File(TakePictureScreen.imagePath)),
            ),
            Expanded(
              flex: 4,
@@ -189,7 +187,7 @@ class DisplayPictureScreenState extends State<DisplayPictureScreen> {
                  Flexible(
                    fit: FlexFit.loose,
                    flex: 2,
-                   child: Text("Imágenes tomadas: ${widget.imagesTaken}"),
+                   child: Text("Imágenes tomadas: ${TakePictureScreen.imagesTaken}"),
                  ),
                  Row(
                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -217,8 +215,9 @@ class DisplayPictureScreenState extends State<DisplayPictureScreen> {
                              Navigator.push(
                                context,
                                new MaterialPageRoute(
-                                   builder: (context) => form(disk: widget.disk, imagesTaken: widget.imagesTaken)),
+                                   builder: (context) => form(disk: widget.disk, imagesTaken: TakePictureScreen.imagesTaken)),
                              );
+                             setState(() {});
                            }
                        ),
                      ),
