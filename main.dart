@@ -9,15 +9,11 @@ import 'package:flutter_facebook_login/flutter_facebook_login.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:simple_permissions/simple_permissions.dart';
 
-// TODO: improve splash screen
-
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
-
   @override
   Widget build(BuildContext context) {
-
     return MaterialApp(
       home: new LoginPage(),
     );
@@ -57,7 +53,6 @@ class LoginPage extends StatelessWidget {
   }
 
   LoginPage() {
-
     getDiskAccess().then(
         (diskRef) {
           disk = diskRef;
@@ -73,16 +68,25 @@ class LoginPage extends StatelessWidget {
     );
   }
 
-  void getAccesToken(String loginProvider) async {
+  Future<void> getAccesToken(String loginProvider) async {
     String token = disk.getString("accessToken");
     if (token != null) {
       return; // accessToken exists
     } else {
-      // FIXME: no agarra el token, debug with Postman
-//      final respuesta = await http.get('http://35.226.71.159/rest-auth/$loginProvider/');
-//      final profile = json.decode(respuesta.body);
+      final respuesta = await http.get('http://35.226.71.159/rest-auth/$loginProvider/');
+      final response = json.decode(respuesta.body);
+//      print("RESPONSE FROM SERVER: $profile");
 //      disk.setString("accessToken", profile['token']);
+
+      /*
+      disk.setBool("isLoggedIn", true);
+      disk.setString("userName", "Bienvenido $name");
+      disk.setString("name", name);
+      userName = disk.getString("userName");
+      disk.setString("userNameEmail", email);
+       */
 //      print("ACCESS TOKEN DEL SERVIDOR: ${profile['token']}");
+      return;
     }
   }
 
@@ -110,13 +114,17 @@ class LoginPage extends StatelessWidget {
                   onPressed: () {
                     Future<void> loginWithFacebook = initiateFacebookLogin();
 
-//                    getAccesToken('facebook');
+//                    getAccesToken('facebook').then(
+//                        (x) {
+//                          changeActivity(context, userName);
+//                        }
+//                    );
 
-                    loginWithFacebook.then(
-                        (nothing) {
-                          changeActivity(context, userName);
-                        }
-                    );
+                  loginWithFacebook.then(
+                    (x) {
+                      changeActivity(context, userName);
+                    });
+
                   },
                 ),
               ),
@@ -131,13 +139,16 @@ class LoginPage extends StatelessWidget {
                   onPressed: () {
                     Future<String> loginWithGoogle = signInWithGoogle();
 
-//                    getAccesToken('google');
+//                    getAccesToken('google').then(
+//                            (x) {
+//                          changeActivity(context, userName);
+//                        }
+//                    );
 
-                    loginWithGoogle.then(
-                        (welcomeMessage) {
-                          changeActivity(context, welcomeMessage);
-                        }
-                    );
+                  loginWithGoogle.then(
+                      (x) {
+                         changeActivity(context, userName);
+                      });
 
                   },
                 ),
@@ -182,7 +193,6 @@ class LoginPage extends StatelessWidget {
         disk.setString("name", name);
         userName = disk.getString("userName");
         disk.setString("userNameEmail", profile["email"]);
-//        disk.setString("facebookToken", token);
         print("Facebook token: $token");
         break;
     }

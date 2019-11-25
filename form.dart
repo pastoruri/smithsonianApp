@@ -1,16 +1,12 @@
 import 'dart:io';
-import 'package:animal_recog/take_picture.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:path_provider/path_provider.dart' show getApplicationDocumentsDirectory;
 import 'camera.dart' show Camera;
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' show join;
 import 'package:shared_preferences/shared_preferences.dart' show SharedPreferences;
 import 'specie_form.dart' show sform, Specie;
 import 'package:http_parser/http_parser.dart' show MediaType;
-
-// TODO: get token from the server (this is done in main.dart)
 
 class form extends StatefulWidget {
 
@@ -316,7 +312,6 @@ class _formState extends State<form> {
                       Navigator.pop(context);
                       Navigator.pop(context);
                       Navigator.pop(context);
-
                     },
                     color: Colors.lightGreen,
                     child: Text(

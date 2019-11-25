@@ -2,8 +2,6 @@ import 'dart:async';
 import 'package:animal_recog/camera.dart' show Camera;
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:path/path.dart' show join;
-import 'package:path_provider/path_provider.dart';
 import 'form.dart' show form;
 import 'dart:io' show File;
 import 'package:geolocator/geolocator.dart' show Geolocator, LocationAccuracy, Position;
@@ -19,30 +17,21 @@ class TakePictureScreen extends StatefulWidget {
   TakePictureScreen({Key key, this.camera, this.disk}) : super(key: key);
 
   @override
-  TakePictureScreenState createState() => TakePictureScreenState(disk: disk);
+  TakePictureScreenState createState() => TakePictureScreenState(disk: disk, cameraDescription: camera);
 }
 
 class TakePictureScreenState extends State<TakePictureScreen> {
 
+  CameraDescription cameraDescription;
   SharedPreferences disk;
 
-  TakePictureScreenState({Key key, this.disk});
-
-  navigate({BuildContext context}) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => DisplayPictureScreen(disk: disk),
-      ),
-    );
-  }
+  TakePictureScreenState({Key key, this.disk, this.cameraDescription});
 
   void imageTaken() {
-    setState(() {
-      if (TakePictureScreen.imagesTaken != 5) {
-        TakePictureScreen.imagesTaken += 1;
-      }
-    });
+    if (TakePictureScreen.imagesTaken != 5) {
+      TakePictureScreen.imagesTaken += 1;
+      TakePictureScreen.imagePath = "${Camera.documentsDirectoryPath}/${TakePictureScreen.imagesTaken}.png";
+    }
   }
 
   CameraController _controller;
@@ -57,7 +46,7 @@ class TakePictureScreenState extends State<TakePictureScreen> {
     // create a CameraController.
     _controller = CameraController(
       // Get a specific camera from the list of available cameras.
-      widget.camera,
+      cameraDescription,
       // Define the resolution to use.
       ResolutionPreset.medium,
     );
@@ -94,7 +83,7 @@ class TakePictureScreenState extends State<TakePictureScreen> {
       // Wait until the controller is initialized before displaying the
       // camera preview. Use a FutureBuilder to display a loading spinner
       // until the controller has finished initializing
-      body: FutureBuilder<void>(
+      body: FutureBuilder<void>( /// FutureBuilder es una clase muy importate
         future: _initializeControllerFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
@@ -112,24 +101,28 @@ class TakePictureScreenState extends State<TakePictureScreen> {
 
             imageTaken();
 
-            // Take the Picture in a try / catch block. If anything goes wrong,
-            // catch the error.
             try {
               // Ensure that the camera is initialized.
               await _initializeControllerFuture;
 
-              final path = join(Camera.documentsDirectoryPath, '${TakePictureScreen.imagesTaken}.png');
-              TakePictureScreen.imagePath = path;
-
               // Attempt to take a picture and log where it's been saved.
-              await _controller.takePicture(path);
+              // FIXME? maybe this does not override the previously taken pictures A.K.A deleted pictures
+              await _controller.takePicture(TakePictureScreen.imagePath);
 
               // If the picture was taken, display it on a new screen.
-              navigate(context: context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => DisplayPictureScreen(disk: disk),
+                ),
+              );
 
               disk.setInt("imagesTaken", TakePictureScreen.imagesTaken);
-              print('Saved image at ${path}');
-              getUserLocation(); // called on a background thread, hopefully
+              print('Saved image at ${TakePictureScreen.imagePath}');
+
+              if (TakePictureScreen.imagesTaken == 1) { // get user coordinates only once
+                getCoordinates();
+              }
 
             } catch (e) {
               // If an error occurs, log the error to the console.
@@ -200,7 +193,7 @@ class DisplayPictureScreenState extends State<DisplayPictureScreen> {
                          icon: const Icon(Icons.add_a_photo),
                          label: const Text('Añadir Foto'),
                          onPressed: () {
-                           Navigator.pop(context, TakePictureScreen.imagesTaken);
+                           Navigator.pop(context);
                          },
                        ),
                      ),
@@ -217,7 +210,6 @@ class DisplayPictureScreenState extends State<DisplayPictureScreen> {
                                new MaterialPageRoute(
                                    builder: (context) => form(disk: widget.disk, imagesTaken: TakePictureScreen.imagesTaken)),
                              );
-                             setState(() {});
                            }
                        ),
                      ),
