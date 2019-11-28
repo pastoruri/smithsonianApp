@@ -21,11 +21,18 @@ class Camera extends StatelessWidget {
 
   Camera({Key key, this.name}) : super(key: key) {
     if (documentsDirectoryPath == null) {
-      getApplicationDocumentsDirectory().then( (d) => documentsDirectoryPath = d.path );
+      getApplicationDocumentsDirectory().then(
+          (d) => documentsDirectoryPath = d.path
+      );
     }
   }
 
   static void deleteAllImages(int imagesTaken) {
+
+    if (imagesTaken == null) {
+      imagesTaken = disk.getInt("imagesTaken") ?? null;
+    }
+
     if (directoryErased != null && !directoryErased && imagesTaken != null && imagesTaken >= 1) {
       if (gotPermission) {
         disk.setInt("imagesTaken", 0);
@@ -35,8 +42,11 @@ class Camera extends StatelessWidget {
         for (int i = 1; i <= imagesTaken; ++i) {
           String path = join(documentsDirectoryPath, '$i.png');
           File fileToDelete = File(path);
-          fileToDelete.deleteSync(recursive: true);
-          print("DELETED FILE: ${fileToDelete.path}");
+          fileToDelete.delete(recursive: true).then(
+            (_) {
+              print("DELETED FILE: ${fileToDelete.path}");
+            }
+          );
         }
         return;
       }
@@ -156,20 +166,20 @@ class _QuestionState extends State<Question> {
       ),
       body: Column(
         children: <Widget>[
-//          Padding(padding: EdgeInsets.all(6.0),),
-//          Flexible(
-//            flex: 2,
-//            child: RaisedButton(
-//              child: Text(
-//                "Borrar Todas Las Fotos Tomadas",
-//              ),
-//              onPressed: () {
-//                Camera.directoryErased = false;
-//                Camera.deleteAllImages(5);
-//                Camera.directoryErased = null;
-//              },
-//            ),
-//          ),
+          Padding(padding: EdgeInsets.all(6.0),),
+          Flexible(
+            flex: 2,
+            child: RaisedButton(
+              child: Text(
+                "Borrar Todas Las Fotos Tomadas",
+              ),
+              onPressed: () {
+                Camera.directoryErased = false;
+                Camera.deleteAllImages(null);
+                Camera.directoryErased = null;
+              },
+            ),
+          ),
           Flexible( // 64 en todos pero mas arriba
             flex: 1,
             child: Center(
@@ -190,9 +200,9 @@ class _QuestionState extends State<Question> {
               child: RawMaterialButton(
                 onPressed: () {
                   availableCameras().then(
-                      (availableCameras) {
-                        changeActivity(_context, availableCameras.first);
-                      }
+                    (availableCameras) {
+                      changeActivity(_context, availableCameras.first);
+                    }
                   );
                 },
                 shape: CircleBorder(),

@@ -95,6 +95,7 @@ class TakePictureScreenState extends State<TakePictureScreen> {
           }
         },
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat, // center the button
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.camera_alt),
           onPressed: () async {
