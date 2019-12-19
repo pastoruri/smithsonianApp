@@ -121,7 +121,7 @@ class LoginPage extends StatelessWidget {
 //                    );
 
                   loginWithFacebook.then(
-                    (x) {
+                    (_) {
                       changeActivity(context, userName);
                     });
 
@@ -140,16 +140,33 @@ class LoginPage extends StatelessWidget {
                     Future<String> loginWithGoogle = signInWithGoogle();
 
 //                    getAccesToken('google').then(
-//                            (x) {
+//                            (_) {
 //                          changeActivity(context, userName);
 //                        }
 //                    );
 
                   loginWithGoogle.then(
-                      (x) {
+                      (_) {
                          changeActivity(context, userName);
                       });
 
+                  },
+                ),
+              ),
+
+              Padding(padding: EdgeInsets.all(4.0),),
+
+              Flexible(
+                flex: 2,
+                child: RaisedButton(
+                  elevation: 5.0,
+                  child: Text(
+                    "Saltar Inicio de Sesión",
+                    style: TextStyle(fontSize: 18.0),
+                  ),
+
+                  onPressed: () {
+                    changeActivity(context, userName);
                   },
                 ),
               ),

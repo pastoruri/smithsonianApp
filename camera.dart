@@ -28,7 +28,6 @@ class Camera extends StatelessWidget {
   }
 
   static void deleteAllImages(int imagesTaken) {
-
     if (imagesTaken == null) {
       imagesTaken = disk.getInt("imagesTaken") ?? null;
     }
@@ -42,16 +41,14 @@ class Camera extends StatelessWidget {
         for (int i = 1; i <= imagesTaken; ++i) {
           String path = join(documentsDirectoryPath, '$i.png');
           File fileToDelete = File(path);
-          fileToDelete.delete(recursive: true).then(
-            (_) {
-              print("DELETED FILE: ${fileToDelete.path}");
-            }
-          );
+          fileToDelete.deleteSync();
+          print("DELETED FILE: ${fileToDelete.path}");
         }
+        PaintingBinding.instance.imageCache.clear();
         return;
       }
     } else {
-      print("TRIED TO ILLEGALLY ERASE DIRECTORY!");
+      print("TRIED TO DELETE IMAGES WHEN NONE WERE TAKEN!");
       return;
     }
   }
@@ -171,8 +168,9 @@ class _QuestionState extends State<Question> {
             flex: 2,
             child: RaisedButton(
               child: Text(
-                "Borrar Todas Las Fotos Tomadas",
+                "Borrar Todas las Fotos Tomadas",
               ),
+              elevation: 10.0,
               onPressed: () {
                 Camera.directoryErased = false;
                 Camera.deleteAllImages(null);
@@ -197,7 +195,7 @@ class _QuestionState extends State<Question> {
           Flexible(
             flex: 5,
             child: Center(
-              child: RawMaterialButton(
+              child: RaisedButton(
                 onPressed: () {
                   availableCameras().then(
                     (availableCameras) {
@@ -206,7 +204,8 @@ class _QuestionState extends State<Question> {
                   );
                 },
                 shape: CircleBorder(),
-                fillColor: Colors.lightGreen,
+                color: Colors.lightGreen,
+                elevation: 25.0,
                 padding: EdgeInsets.all(80.0),
                 child: Icon(Icons.add_a_photo, size: 80.0),
               ),
@@ -216,7 +215,7 @@ class _QuestionState extends State<Question> {
       ),
       floatingActionButton: FloatingActionButton(
           onPressed: logout,
-          elevation: 1.0,
+          elevation: 10.0,
           child: Icon(Icons.exit_to_app, size: 30.0)
       ),
     ),

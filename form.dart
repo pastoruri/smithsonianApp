@@ -61,7 +61,7 @@ class _formState extends State<form> {
                 content: SingleChildScrollView(
                   child: ListBody(
                     children: <Widget>[
-                      Text("Además de reportar al animal mediante este aplicación, recomendamos que llame al SERFOR para reportar al animal vivo.\nSu número es: (01) 2259005."),
+                      Text("Además de reportar al animal mediante este aplicación, recomendamos que llame a Capitanía de Puerto para reportar al animal vivo.\n\nEl número de Capitanía de Puerto depende de la zona donde usted se encuentre.\n\nLe recomendamos buscar el número en internet."),
                     ],
                   ),
                 ),
@@ -97,7 +97,7 @@ class _formState extends State<form> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Cuéntanos más sobre el animal"),
+        title: Text("Cuéntanos un poco más..."),
       ),
       body: Center( // Center
         child: Align(
@@ -116,6 +116,7 @@ class _formState extends State<form> {
                         style: TextStyle(fontSize: 20.0),
                       ),
                       if (form.specie == null) RaisedButton(
+                        elevation: 10.0,
                           child: Text("Seleccionar especie"),
                           onPressed: () {
                             sform.disk = widget.disk;
@@ -245,6 +246,7 @@ class _formState extends State<form> {
                 Flexible( // Padding
                   flex: 2, // // padding: EdgeInsets.all(20.0),
                   child: RaisedButton(
+                    elevation: 5.0,
                     onPressed: _formState.buttonIsDisabled ? null : () async {
 
                       _formState.buttonIsDisabled = true;

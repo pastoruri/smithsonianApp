@@ -4,6 +4,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'form.dart' show form;
 import 'dart:io' show File;
+import 'package:path/path.dart' show join;
 import 'package:geolocator/geolocator.dart' show Geolocator, LocationAccuracy, Position;
 import 'package:shared_preferences/shared_preferences.dart' show SharedPreferences;
 
@@ -17,7 +18,9 @@ class TakePictureScreen extends StatefulWidget {
   TakePictureScreen({Key key, this.camera, this.disk}) : super(key: key);
 
   @override
-  TakePictureScreenState createState() => TakePictureScreenState(disk: disk, cameraDescription: camera);
+  TakePictureScreenState createState() {
+    return TakePictureScreenState(disk: disk, cameraDescription: camera);
+  }
 }
 
 class TakePictureScreenState extends State<TakePictureScreen> {
@@ -107,7 +110,6 @@ class TakePictureScreenState extends State<TakePictureScreen> {
               await _initializeControllerFuture;
 
               // Attempt to take a picture and log where it's been saved.
-              // FIXME? maybe this does not override the previously taken pictures A.K.A deleted pictures
               await _controller.takePicture(TakePictureScreen.imagePath);
 
               // If the picture was taken, display it on a new screen.
@@ -153,15 +155,22 @@ class DisplayPictureScreen extends StatefulWidget {
 
 class DisplayPictureScreenState extends State<DisplayPictureScreen> {
 
+  Image imageTaken = Image.file(File(TakePictureScreen.imagePath));
+  String imagePath = join(Camera.documentsDirectoryPath, '${TakePictureScreen.imagesTaken}.png');
+
    void imageDeleted() {
      setState(() {
        TakePictureScreen.imagesTaken -= 1;
+       if (TakePictureScreen.imagesTaken != 0) {
+         imagePath = join(Camera.documentsDirectoryPath, '${TakePictureScreen.imagesTaken}.png');
+         imageTaken = Image.file(File(TakePictureScreen.imagePath));
+       }
      });
    }
 
    @override
    Widget build(BuildContext context) {
-     print("ABOUT TO DISPLAY AN IMAGE AT PATH: ${TakePictureScreen.imagePath}");
+     print("ABOUT TO DISPLAY AN IMAGE AT PATH: $imagePath");
      print("BY THE WAY, IMAGES TAKEN: ${TakePictureScreen.imagesTaken}");
      return Scaffold(
        appBar: AppBar(
@@ -172,7 +181,7 @@ class DisplayPictureScreenState extends State<DisplayPictureScreen> {
          children: <Widget>[
            Expanded(
              flex: 28,
-             child: Image.file(File(TakePictureScreen.imagePath)),
+             child: imageTaken,
            ),
            Expanded(
              flex: 4,
@@ -189,10 +198,9 @@ class DisplayPictureScreenState extends State<DisplayPictureScreen> {
                      if (!widget.fivePhotosTaken) Flexible(
                        flex: 1,
                        fit: FlexFit.loose,
-                       child: FlatButton.icon(
+                       child: RaisedButton(
                          color: Colors.lightGreen,
-                         icon: const Icon(Icons.add_a_photo),
-                         label: const Text('Añadir Foto'),
+                         child: Text('Añadir Foto'),
                          onPressed: () {
                            Navigator.pop(context);
                          },
@@ -201,10 +209,25 @@ class DisplayPictureScreenState extends State<DisplayPictureScreen> {
                      Flexible(
                        flex: 1,
                        fit: FlexFit.loose,
-                       child: FlatButton.icon(
-                           icon: const Icon(Icons.arrow_right),
-                           label: const Text('Confirmar'),
+                       child: RaisedButton(
+                         color: Colors.lightGreen,
+                         child: Text('Borrar Foto'),
+                         onPressed: () {
+                           File imageToDelete = File(imagePath);
+                           imageToDelete.deleteSync();
+                           PaintingBinding.instance.imageCache.clear();
+                           imageDeleted();
+                           print("IMAGE JUST TAKEN DELETED!");
+                           Navigator.pop(context);
+                         },
+                       ),
+                     ),
+                     Flexible(
+                       flex: 1,
+                       fit: FlexFit.loose,
+                       child: RaisedButton(
                            color: Colors.lightGreen,
+                           child: Text('Confirmar'),
                            onPressed: () {
                              Navigator.push(
                                context,
