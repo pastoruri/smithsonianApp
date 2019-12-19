@@ -1,1 +1,3 @@
-NO funciona Facebook Login ni Google Login para el que descargue esto.
+## LEEME ANTES DE CLONAR
+
+* Comentar, en main.dart, los botones de Facebook Login y Google Login, ya que no funcionan.
